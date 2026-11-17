@@ -57,7 +57,7 @@ QUALIFY ROW_NUMBER() OVER (
 
 GitHub リポジトリにて、実際のファイル（`edinet_pit_sample.parquet` / `edinet_pit_sample.duckdb`）と検証用スキーマ仕様を公開しています。そのまま Polars や DuckDB で読み込んでデータ品質を確認できます。
 
-* **GitHub（無料サンプル）**: `https://github.com/automated-project/edinet-pit-dataset`
+* **GitHub（無料サンプル）**: `https://github.com/terselogic/edinet-pit-dataset`
 
 ---
 
