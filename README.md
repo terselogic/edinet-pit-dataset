@@ -1,5 +1,9 @@
 # EDINET Point-in-Time Dataset (`edinet-pit-dataset`)
 
+> **English Summary:** Survivorship-bias-free, Point-in-Time Japanese annual securities report (EDINET) dataset in Parquet & DuckDB, preserving amendment timestamps (`submit_datetime`) and precomputed `intfloat/multilingual-e5-large` Business Risks drift scores (`risk_change_score`).
+> - **Specs & Full Archive Early Access:** https://terselogic.com/datasets/edinet-pit/?utm_source=github&utm_medium=readme
+> - **Free Sample (10 issuers, 2 years) on Hugging Face:** https://huggingface.co/datasets/terselogic/edinet-pit-sample
+
 日本株クオンツ・システムトレーダー向けの、**サバイバーシップバイアス除去済み・Point-in-Time（時点整合性）保証・有報テキスト変化スコア付き** 静的データセット（Parquet / DuckDB）および構築パイプラインです。
 
 > **無料サンプル（10社・2年分）**: [`sample/edinet_pit_sample.parquet`](sample/edinet_pit_sample.parquet) / [`sample/edinet_pit_sample.duckdb`](sample/edinet_pit_sample.duckdb)
@@ -83,7 +87,8 @@ QUALIFY ROW_NUMBER() OVER (
 
 全上場企業（上場廃止含む）× 過去5〜10年分のフルデータセット（初期買い切り 20,000円想定 / 月次更新サブスク 3,500円想定）の先行リリース通知・追加項目リクエストを受け付けています。
 
-* **先行案内・リクエスト登録**: `https://terselogic.com/edinet-pit/`（※準備中・公開用URLへ差し替え）
+* **先行案内・リクエスト登録**: https://terselogic.com/datasets/edinet-pit/?utm_source=github&utm_medium=readme
+* **Hugging Face 無料サンプル**: https://huggingface.co/datasets/terselogic/edinet-pit-sample
 
 ---
 

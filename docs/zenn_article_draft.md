@@ -72,4 +72,5 @@ GitHub リポジトリにて、実際のファイル（`edinet_pit_sample.parque
 現在、全上場企業（上場廃止含む）× 過去5〜10年分のフルバッチ生成を進めています。
 「この指標列も欲しい」「大量保有報告書や四半期データも結合してほしい」といったリクエストと、先行リリース案内（初期買い切り 20,000円 / 月次更新 3,500円想定）の登録を受け付けています。
 
-* **先行案内・リクエスト登録**: `https://terselogic.com/edinet-pit/`（※LP公開URLへ差し替え）
+* **先行案内・リクエスト登録**: https://terselogic.com/datasets/edinet-pit/?utm_source=zenn&utm_medium=article
+* **Hugging Face 無料サンプル**: https://huggingface.co/datasets/terselogic/edinet-pit-sample
