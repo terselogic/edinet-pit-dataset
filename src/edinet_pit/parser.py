@@ -6,6 +6,7 @@ import csv
 from dataclasses import dataclass
 import io
 from pathlib import Path
+import re
 import zipfile
 
 from edinet_pit.client import EdinetDocument
@@ -25,8 +26,19 @@ METRIC_ELEMENT_MAP: dict[str, str] = {
     "jpcrp_cor:EquityAttributableToOwnersOfParentIFRSSummaryOfBusinessResults": "net_assets",
     "jpcrp_cor:TotalAssetsSummaryOfBusinessResults": "total_assets",
     "jpcrp_cor:TotalAssetsIFRSSummaryOfBusinessResults": "total_assets",
+    "jpcrp_cor:NetCashProvidedByUsedInOperatingActivitiesSummaryOfBusinessResults": "operating_cf",
+    "jpcrp_cor:CashFlowsFromUsedInOperatingActivitiesIFRSSummaryOfBusinessResults": "operating_cf",
     "jpcrp_cor:CashFlowsFromOperatingActivitiesSummaryOfBusinessResults": "operating_cf",
+    "jppfs_cor:NetCashProvidedByUsedInOperatingActivities": "operating_cf",
 }
+
+DEI_PERIOD_END_ELEMENTS: tuple[str, ...] = (
+    "jpdei_cor:CurrentPeriodEndDateDEI",
+    "jpdei_cor:CurrentFiscalYearEndDateDEI",
+)
+
+ISO_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+CSV_FILENAME_PERIOD_RE = re.compile(r"_[A-Z]\d{5}-\d{3}_(\d{4}-\d{2}-\d{2})_")
 
 TEXT_BLOCK_ELEMENTS: dict[str, str] = {
     "jpcrp_cor:BusinessRisksTextBlock": "business_risks",
@@ -83,11 +95,18 @@ def parse_filing_zip(zip_path: Path, doc: EdinetDocument) -> ParsedFiling:
     consolidated: dict[str, float] = {}
     non_consolidated: dict[str, float] = {}
     texts: dict[str, str] = {}
+    dei_period_end: dict[str, str] = {}
 
     for row in reader:
         if len(row) < 9:
             continue
         elem_id, context_id, val = row[0], row[2], row[8]
+
+        if elem_id in DEI_PERIOD_END_ELEMENTS and val.strip():
+            cand = val.strip()
+            if ISO_DATE_RE.match(cand) and elem_id not in dei_period_end:
+                dei_period_end[elem_id] = cand
+            continue
 
         if elem_id in TEXT_BLOCK_ELEMENTS and context_id in {
             "FilingDateInstant",
@@ -112,6 +131,18 @@ def parse_filing_zip(zip_path: Path, doc: EdinetDocument) -> ParsedFiling:
         elif context_id in NON_CONSOLIDATED_CONTEXTS and metric_name not in non_consolidated:
             non_consolidated[metric_name] = num
 
+    # 訂正報告書(130等)ではAPIメタデータのperiod_endがNoneになるためDEI/ファイル名から補完
+    resolved_period_end = doc.period_end
+    if not resolved_period_end:
+        for key in DEI_PERIOD_END_ELEMENTS:
+            if key in dei_period_end:
+                resolved_period_end = dei_period_end[key]
+                break
+    if not resolved_period_end:
+        fname_match = CSV_FILENAME_PERIOD_RE.search(csv_name)
+        if fname_match:
+            resolved_period_end = fname_match.group(1)
+
     merged = {**non_consolidated, **consolidated}
     # CSVダウンロード時は submit_datetime が "YYYY-MM-DD HH:MM" なので秒を補完
     submit_ts = (
@@ -128,7 +159,7 @@ def parse_filing_zip(zip_path: Path, doc: EdinetDocument) -> ParsedFiling:
             "filer_name": doc.filer_name,
             "doc_type_code": doc.doc_type_code,
             "is_amendment": doc.is_amendment,
-            "period_end": doc.period_end,
+            "period_end": resolved_period_end,
             "submit_datetime": submit_ts,
             "metric_name": m_name,
             "metric_value": m_val,

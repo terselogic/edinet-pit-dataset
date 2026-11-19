@@ -1,0 +1,11 @@
+edinet-pit-dataset — Primary Source Attributions & License Notice
+
+1. 金融庁 EDINET（有価証券報告書・訂正有価証券報告書 XBRL/CSV 公開データ）
+   - 出典: 金融庁 EDINET (https://disclosure2.edinet-fsa.go.jp/)
+   - 適用規約: 公共データ利用規約（第1.0版 / PDL1.0） (https://disclosure2dl.edinet-fsa.go.jp/guide/static/submit/WZEK0030.html)
+   - 加工表示: 「EDINET 有価証券報告書等」（金融庁）を加工して TerseLogic が作成。
+     本データセットの財務指標テーブルおよび事前計算スコア（risk_change_score）は、一次開示数値・公開テキストを独自スキーマへ正規化・編集加工したものであり、金融庁が作成した未加工データではありません。
+
+2. EDINET タクソノミ（要素ID参照）
+   - © Copyright 2014 Financial Services Agency, The Japanese Government.
+   - 本パイプラインは金融庁公開の EDINET タクソノミ標準要素ID（jpcrp_cor / jppfs_cor / jpdei_cor）を改変せずに参照しています。

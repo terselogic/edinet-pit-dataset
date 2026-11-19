@@ -104,3 +104,71 @@ def test_export_dataset_writes_parquet_and_duckdb(tmp_path: Path) -> None:
     outputs = export_dataset(df, tmp_path, name="sample")
     assert outputs["parquet"].exists()
     assert outputs["duckdb"].exists()
+
+
+def test_parse_filing_zip_extracts_operating_cf_and_fills_amendment_period_end(tmp_path: Path) -> None:
+    """Verify operating_cf extraction and DEI period_end fallback for amendment (130) filings."""
+    import zipfile
+    from edinet_pit.client import EdinetDocument
+    from edinet_pit.parser import parse_filing_zip
+
+    csv_content = "\n".join(
+        [
+            "要素ID\t項目名\tコンテキストID\t相対年度\t連結・個別\t期間・時点\tユニットID\t単位\t値",
+            "jpdei_cor:CurrentPeriodEndDateDEI\t当期末\tFilingDateInstant\t\t\t\t\t\t2026-03-31",
+            "jpcrp_cor:NetSalesSummaryOfBusinessResults\t売上高\tCurrentYearDuration\t\t\t\tJPY\t円\t100000000",
+            "jpcrp_cor:NetCashProvidedByUsedInOperatingActivitiesSummaryOfBusinessResults\t営業CF\tCurrentYearDuration\t\t\t\tJPY\t円\t25000000",
+        ]
+    )
+    zip_path = tmp_path / "S100AMEND_type5.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr(
+            "XBRL_TO_CSV/jpcrp030000-asr-001_E00360-000_2026-03-31_02_2026-06-25.csv",
+            csv_content.encode("utf-16"),
+        )
+
+    doc = EdinetDocument(
+        doc_id="S100AMEND",
+        edinet_code="E00360",
+        sec_code="21140",
+        filer_name="Test Corp",
+        doc_type_code="130",
+        period_start=None,
+        period_end=None,
+        submit_datetime="2026-06-25 12:00",
+        doc_description="訂正有価証券報告書",
+        xbrl_flag=True,
+        csv_flag=True,
+    )
+    parsed = parse_filing_zip(zip_path, doc)
+    by_metric = {m["metric_name"]: m for m in parsed.metrics}
+    assert "operating_cf" in by_metric
+    assert by_metric["operating_cf"]["metric_value"] == 25000000.0
+    assert by_metric["operating_cf"]["period_end"] == "2026-03-31"
+    assert by_metric["operating_cf"]["is_amendment"] is True
+
+    df = build_pit_dataframe(parsed.metrics)
+    validate_pit_integrity(df)
+
+
+def test_validate_rejects_null_period_end() -> None:
+    """Ensure rows with null period_end are rejected."""
+    df = build_pit_dataframe(
+        [
+            {
+                "doc_id": "S100NULL",
+                "edinet_code": "E00009",
+                "sec_code": "10090",
+                "filer_name": "Null Period Corp",
+                "doc_type_code": "130",
+                "is_amendment": True,
+                "period_end": None,
+                "submit_datetime": "2026-06-25 09:00:00",
+                "metric_name": "net_sales",
+                "metric_value": 100.0,
+                "risk_change_score": None,
+            }
+        ]
+    )
+    with pytest.raises(ValueError, match="null required keys"):
+        validate_pit_integrity(df)

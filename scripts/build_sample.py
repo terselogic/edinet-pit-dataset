@@ -10,7 +10,12 @@ import polars as pl
 
 from edinet_pit.client import EdinetClient, EdinetDocument
 from edinet_pit.parser import parse_filing_zip
-from edinet_pit.pit_schema import attach_drift_scores, build_pit_dataframe, export_dataset
+from edinet_pit.pit_schema import (
+    attach_drift_scores,
+    build_pit_dataframe,
+    export_dataset,
+    write_license_attributions,
+)
 
 
 def _load_dotenv(env_path: Path) -> None:
@@ -110,6 +115,11 @@ def main() -> None:
     if drift_path.exists():
         df = attach_drift_scores(df, pl.read_parquet(drift_path))
     outputs = export_dataset(df, out_dir, name="edinet_pit_sample")
+    write_license_attributions(out_dir)
+
+    sample_dir = root / "sample"
+    export_dataset(df, sample_dir, name="edinet_pit_sample")
+    write_license_attributions(sample_dir)
 
     if text_rows:
         texts_df = pl.DataFrame(text_rows).sort(["edinet_code", "section", "submit_datetime"])

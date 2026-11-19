@@ -10,7 +10,12 @@ import polars as pl
 
 from edinet_pit.client import EdinetClient, EdinetDocument
 from edinet_pit.parser import parse_filing_zip
-from edinet_pit.pit_schema import attach_drift_scores, build_pit_dataframe, export_dataset
+from edinet_pit.pit_schema import (
+    attach_drift_scores,
+    build_pit_dataframe,
+    export_dataset,
+    write_license_attributions,
+)
 
 
 def _load_dotenv(env_path: Path) -> None:
@@ -68,15 +73,19 @@ def main() -> None:
     text_rows: list[dict[str, object]] = []
 
     with EdinetClient() as client:
-        docs_2026 = client.list_documents(date(2026, 6, 25), doc_type_codes={"120"})
+        docs_2026 = client.list_documents(date(2026, 6, 25), doc_type_codes={"120", "130"})
         selected_2026 = _select_listed_annual(docs_2026, limit=150)
         target_codes = {d.edinet_code for d in selected_2026 if d.edinet_code}
+        amendments_2026 = [
+            d for d in docs_2026
+            if d.doc_type_code == "130" and d.csv_flag and d.sec_code
+        ][:10]
         prior_2025 = _find_prior_year_filings(
             client, target_codes, date(2025, 6, 18), date(2025, 6, 30)
         )
-        all_docs = prior_2025 + selected_2026
+        all_docs = prior_2025 + selected_2026 + amendments_2026
         print(
-            f"Cohort filings: total={len(all_docs)} (2025={len(prior_2025)}, 2026={len(selected_2026)})"
+            f"Cohort filings: total={len(all_docs)} (2025={len(prior_2025)}, 2026={len(selected_2026)}, amend={len(amendments_2026)})"
         )
 
         for idx, doc in enumerate(all_docs, start=1):
@@ -107,6 +116,7 @@ def main() -> None:
     if drift_path.exists():
         df = attach_drift_scores(df, pl.read_parquet(drift_path))
     outputs = export_dataset(df, out_dir, name="edinet_pit_cohort")
+    write_license_attributions(out_dir)
 
     if text_rows:
         texts_df = pl.DataFrame(text_rows).sort(["edinet_code", "section", "submit_datetime"])
