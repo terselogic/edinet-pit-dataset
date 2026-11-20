@@ -85,7 +85,10 @@ def parse_filing_zip(zip_path: Path, doc: EdinetDocument) -> ParsedFiling:
             return ParsedFiling(metrics=[], texts={})
         raw_bytes = zf.read(csv_name)
 
-    text = raw_bytes.decode("utf-16")
+    try:
+        text = raw_bytes.decode("utf-16")
+    except UnicodeDecodeError:
+        text = raw_bytes.decode("utf-16", errors="replace")
     reader = csv.reader(io.StringIO(text), delimiter="\t")
     header = next(reader, None)
     if not header:

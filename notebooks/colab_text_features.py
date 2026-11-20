@@ -49,7 +49,12 @@ def main(
     print(f"Loading {model_name} on {device}...")
     model = SentenceTransformer(model_name, device=device)
 
-    df = pl.read_parquet(input_path).sort(["edinet_code", "section", "submit_datetime"])
+    df = pl.read_parquet(input_path)
+    if "is_amendment" in df.columns:
+        df = df.filter(~pl.col("is_amendment"))
+    elif "doc_type_code" in df.columns:
+        df = df.filter(pl.col("doc_type_code") == "120")
+    df = df.sort(["edinet_code", "section", "submit_datetime"])
     rows: list[dict[str, object]] = []
 
     for (edinet_code, section), group in df.group_by(

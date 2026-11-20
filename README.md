@@ -6,7 +6,7 @@
 
 日本株クオンツ・システムトレーダー向けの、**サバイバーシップバイアス除去済み・Point-in-Time（時点整合性）保証・有報テキスト変化スコア付き** 静的データセット（Parquet / DuckDB）および構築パイプラインです。
 
-> **無料サンプル（10社・2年分）**: [`sample/edinet_pit_sample.parquet`](sample/edinet_pit_sample.parquet) / [`sample/edinet_pit_sample.duckdb`](sample/edinet_pit_sample.duckdb)
+> **無料サンプル（10社・18書類: 有報8社×2年分＋訂正有報2社×1書類）**: [`sample/edinet_pit_sample.parquet`](sample/edinet_pit_sample.parquet) / [`sample/edinet_pit_sample.duckdb`](sample/edinet_pit_sample.duckdb)
 
 ---
 
@@ -33,9 +33,9 @@
 | `is_amendment` | `Boolean` | 訂正報告書フラグ |
 | `period_end` | `Date` | 会計期末日（`YYYY-MM-DD`） |
 | `submit_datetime` | `Datetime` | 提出日時（先読み防止の基準時刻） |
-| `metric_name` | `String` | 正規化指標名（`net_sales`, `operating_income`, `ordinary_income`, `net_income`, `net_assets`, `total_assets`, `operating_cf`） |
+| `metric_name` | `String` | 正規化指標名（`net_sales`, `operating_income`, `ordinary_income`, `net_income`, `net_assets`, `total_assets`, `operating_cf`。IFRS 採用企業は税引前利益を `ordinary_income` へマッピング。銀行・保険業等の業種別タクソノミにより一部指標が未収録となる場合あり） |
 | `metric_value` | `Float64` | 指標値（円） |
-| `risk_change_score` | `Float64` | 有報「事業等のリスク」の前年比変化スコア（コサイン距離） |
+| `risk_change_score` | `Float64` | 有報「事業等のリスク」の前年比変化スコア（コサイン距離。400文字×最大12チャンク＝先頭4,800文字の平均Embedding） |
 
 ---
 
@@ -77,7 +77,7 @@ QUALIFY ROW_NUMBER() OVER (
 
 上場企業148社の「事業等のリスク」前年比変化スコア（`risk_change_score`）を計測したところ、以下の傾向が確認されました。
 
-* **中央値（50%）**: `0.001543`（下位25%は `0.000253` 以下で前年踏襲）
+* **中央値（50%）**: `0.0015215`（下位25%は `0.000253` 以下で前年踏襲）
 * **最大値**: `0.023372`（中央値の約15倍）
 * 上位には経営環境・事業構造やリスク開示を大きく書き換えた銘柄（例：ANAホールディングス `0.023372`、大東建託 `0.018248` 等）が明確に分離されました。
 

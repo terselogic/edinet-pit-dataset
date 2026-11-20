@@ -94,6 +94,9 @@ def main() -> None:
                 zip_path = client.download_document(doc.doc_id, raw_dir, file_type=5)
             parsed = parse_filing_zip(zip_path, doc)
             metric_rows.extend(parsed.metrics)
+            resolved_period_end = (
+                parsed.metrics[0].period_end if parsed.metrics else doc.period_end
+            )
             for section, content in parsed.texts.items():
                 text_rows.append(
                     {
@@ -101,7 +104,9 @@ def main() -> None:
                         "edinet_code": doc.edinet_code,
                         "sec_code": doc.sec_code,
                         "filer_name": doc.filer_name,
-                        "period_end": doc.period_end,
+                        "doc_type_code": doc.doc_type_code,
+                        "is_amendment": doc.is_amendment,
+                        "period_end": resolved_period_end,
                         "submit_datetime": doc.submit_datetime,
                         "section": section,
                         "text_length": len(content),
